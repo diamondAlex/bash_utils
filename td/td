@@ -1,0 +1,18 @@
+#!/bin/bash
+home=$(echo ~)
+rootPath=$(echo $home/prog)
+defaultFileName="todo"
+files=`echo $(fd -t f --exclude "*backup*" --exclude "*/node_modules*" --case-sensitive "${defaultFileName}$" "${rootPath}") | tr " " "\n"`
+
+while true
+do
+    selected=`printf "$files" | fzf`
+    choices=`printf "$selected\nback\n$(cat $selected)\n"`
+    gotoTodo=`printf "$choices" | fzf`
+    echo `printf  "$gotoTodo" | grep -qs $files`
+    if [ "$gotoTodo" != "back" ]; then
+        path=$(echo "${selected[0]%/*}")
+        tmux neww bash -c "cd $path; exec bash"
+        break
+    fi
+done

@@ -1,0 +1,61 @@
+#!/bin/bash
+path=$(pwd)
+home=$(echo ~)
+filename=".runz"
+file=$(find . -maxdepth 1 -name "${filename}")
+
+#looks for command in .runz the runs it
+exec_runner() {
+    scripts=$(cat ${file})
+    IFS=$'\n'
+    for line in $scripts
+    do
+        if [ ! $# -eq 0 ];
+        then
+            comment=${line:0:1}
+            if [ "$comment" != "#" ];
+            then
+                IFS=':' read -ra comm <<< "$line"
+                command=$(printf $comm | grep -w $1)
+                if [ ! -z "$command" ];
+                then
+                    text=$(printf $line | sed 's/"//g')
+                    IFS=':' read scr cmd <<< "$text"
+                    echo ran - $cmd - probably succesfully
+                    eval "${cmd}" "$2"
+                fi 
+            fi
+        fi
+
+    done
+}
+
+has_script(){
+    if [ -z "$1" ];
+    then
+        cat $file
+    else
+        exec_runner $1 $2
+    fi
+}
+
+#finds .runz file
+if [ -z "$file" ];
+then
+    while [[ !($path == $home) && -z "$file" ]]
+    do
+        path=$(echo "${path%/*}")
+        file=$(find "${path}" -maxdepth 1 -type f -name "${filename}")
+        echo "path = ${path}"
+        echo "file = ${file}"
+    done
+    if [ -z "$file" ];
+    then
+        echo "no runner file found"
+    else
+        has_script $1 $2
+    fi
+else
+    has_script $1 $2
+fi
+
